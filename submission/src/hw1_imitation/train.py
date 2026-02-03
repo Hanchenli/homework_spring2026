@@ -160,10 +160,11 @@ def run_training(config: TrainConfig) -> None:
                     step=step,
                     logger=logger,
                 )
-                model.train()  
+                model.train()  # Set back to training mode after evaluation
             
             step += 1
 
+    # Final evaluation
     evaluate_policy(
         model=model,
         normalizer=normalizer,

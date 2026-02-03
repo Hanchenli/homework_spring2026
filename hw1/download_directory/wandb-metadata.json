@@ -1,0 +1,34 @@
+{
+  "os":  "Linux-4.4.0-x86_64-with-glibc2.36",
+  "python":  "CPython 3.11.12",
+  "startedAt":  "2026-02-02T01:07:43.504547Z",
+  "program":  "-m modal._container_entrypoint",
+  "email":  "lihanc@berkeley.edu",
+  "root":  "/vol/wandb",
+  "host":  "modal",
+  "executable":  "/.uv/.venv/bin/python",
+  "cpu_count":  18,
+  "cpu_count_logical":  18,
+  "gpu":  "Tesla T4",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "549755813888",
+      "used":  "38121119744"
+    }
+  },
+  "memory":  {
+    "total":  "404806692864"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "Tesla T4",
+      "memoryTotal":  "16106127360",
+      "cudaCores":  2560,
+      "architecture":  "Turing",
+      "uuid":  "GPU-2ef89e77-a2bb-d883-c59b-e62f89fefc5a"
+    }
+  ],
+  "cudaVersion":  "13.0",
+  "writerId":  "o0s41wfsyltu41406xxh2r6kxrj3hxfq"
+}

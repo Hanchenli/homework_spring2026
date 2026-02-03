@@ -68,7 +68,7 @@ class MSEPolicy(BasePolicy):
         action_chunk: torch.Tensor,
     ) -> torch.Tensor:
         pred_chunk = self.sample_actions(state, num_steps=1)
-        loss = nn.MSELoss(reduction='sum')(pred_chunk, action_chunk) / action_chunk.shape[0]
+        loss = nn.MSELoss(reduction='mean')(pred_chunk, action_chunk)
         return loss
 
     def sample_actions(
@@ -94,6 +94,7 @@ class FlowMatchingPolicy(BasePolicy):
     ) -> None:
         super().__init__(state_dim, action_dim, chunk_size)
         self.hidden_dims = hidden_dims
+        # Input: state + flattened noisy action + time t
         input_dim = state_dim + action_dim * chunk_size + 1
         self.layers = nn.Sequential(
             nn.Linear(input_dim, hidden_dims[0]), ReLUSquared(),
@@ -109,12 +110,13 @@ class FlowMatchingPolicy(BasePolicy):
         t: torch.Tensor,
     ) -> torch.Tensor:
         """Predict velocity given state, noisy action x_t, and time t."""
-        # x_t: (batch, chunk_size, action_dim) -> (batch, chunk_size * action_dim)
+        # x_t: (batch, chunk_size, action_dim) -> flatten to (batch, chunk_size * action_dim)
         x_t_flat = x_t.reshape(x_t.shape[0], -1)
+        # t: (batch,) -> (batch, 1)
         if t.dim() == 0:
             t = t.unsqueeze(0)
         t = t.view(-1, 1)
-
+        # Concatenate state, flattened noisy action, and time
         inputs = torch.cat([state, x_t_flat, t], dim=-1)
         velocity = self.layers(inputs)
         return velocity.reshape(x_t.shape[0], self.chunk_size, self.action_dim)
@@ -125,14 +127,19 @@ class FlowMatchingPolicy(BasePolicy):
         action_chunk: torch.Tensor,
     ) -> torch.Tensor:
         batch_size = state.shape[0]
-        # Sample random time t
+        # Sample random time t ~ U(0, 1)
         t = torch.rand(batch_size, device=state.device)
+        # Sample noise from standard normal
         noise = torch.randn_like(action_chunk)
+        # Interpolate: x_t = (1 - t) * noise + t * action
         t_expanded = t.view(-1, 1, 1)
         x_t = (1 - t_expanded) * noise + t_expanded * action_chunk
+        # Target velocity is action - noise (direction from noise to data)
         target_velocity = action_chunk - noise
+        # Predict velocity
         pred_velocity = self.forward(state, x_t, t)
-        loss = nn.MSELoss(reduction='sum')(pred_velocity, target_velocity) / action_chunk.shape[0]
+        # MSE loss
+        loss = nn.MSELoss(reduction='mean')(pred_velocity, target_velocity)
         return loss
 
     def sample_actions(
@@ -145,7 +152,7 @@ class FlowMatchingPolicy(BasePolicy):
         # Start from noise at t=0
         x_t = torch.randn(batch_size, self.chunk_size, self.action_dim, device=state.device)
         dt = 1.0 / num_steps
-
+        # Euler integration from t=0 to t=1
         for i in range(num_steps):
             t = torch.full((batch_size,), i * dt, device=state.device)
             velocity = self.forward(state, x_t, t)
