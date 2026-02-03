@@ -31,7 +31,7 @@ class TrainConfig:
     data_dir: Path = Path("data")
 
     # The policy type -- either MSE or flow.
-    policy_type: PolicyType = "mse"
+    policy_type: PolicyType = "flow"
     # The number of denoising steps to use for the flow policy (has no effect for the MSE policy).
     flow_num_steps: int = 10
     # The action chunk size.
@@ -143,11 +143,8 @@ def run_training(config: TrainConfig) -> None:
             loss.backward()
             optimizer.step()
             
-            # Log training metrics periodically
-            # if step % config.log_interval == 0:
             logger.log({"train/loss": loss.item()}, step=step)
             
-            # Evaluate policy periodically
             if step % config.eval_interval == 0:
                 evaluate_policy(
                     model=model,

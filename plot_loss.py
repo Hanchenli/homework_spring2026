@@ -1,35 +1,39 @@
 import matplotlib.pyplot as plt
-import pandas as pd
-from wandb.apis.public.api import Api
+import csv
+import os
 
-# Initialize API
-api = Api()
+# Read the CSV file
+script_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(script_dir, 'hw1/exp/flow/log.csv')
+steps = []
+losses = []
 
-# Get run object - the run with seed_42_20260202_004718
-run = api.run("lihanc-university-of-california-berkeley/hw1-imitation/runs/61ve7ex2")
+with open(csv_path, 'r') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        # Skip rows with empty loss values
+        if row['train/loss'] and row['train/loss'].strip():
+            try:
+                step = int(row['step'])
+                loss = float(row['train/loss'])
+                steps.append(step)
+                losses.append(loss)
+            except (ValueError, KeyError):
+                continue
 
-print(f"Run name: {run.name}")
-print(f"Run ID: {run.id}")
-
-# Get run history
-history = run.history()
-print(f"History columns: {history.columns.tolist()}")
-
-# Filter to get loss data
-loss_data = history[['_step', 'train/loss']].dropna()
-print(f"Number of loss data points: {len(loss_data)}")
+print(f"Number of loss data points: {len(steps)}")
 
 # Plot loss curve
 plt.figure(figsize=(10, 6))
-plt.plot(loss_data['_step'], loss_data['train/loss'], linewidth=1.5)
+plt.plot(steps, losses, linewidth=1.5)
 plt.xlabel('Training Steps', fontsize=12)
 plt.ylabel('Training Loss', fontsize=12)
-plt.title(f'Loss Curve for {run.name}', fontsize=14)
+plt.title('Loss Curve (Flow)', fontsize=14)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 
 # Save the plot
-output_path = 'loss_curve_seed_42.png'
+output_path = os.path.join(script_dir, 'hw1/loss_curve_flow.png')
 plt.savefig(output_path, dpi=150)
 print(f"Plot saved to {output_path}")
 
